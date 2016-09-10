@@ -1,0 +1,37 @@
+[user]
+  name = dk938
+  email = 938.daisuke@gmail.com
+
+[color]
+  diff = auto
+  status = auto
+  branch = auto
+
+[alias]
+  co = checkout
+  ci = commit
+  status = status | less
+
+[color]
+  branch = auto
+  diff = auto
+  status = auto
+
+[color "branch"]
+  current = yellow reverse
+  local = yellow
+  remote = green
+
+[color "status"]
+  added = yellow
+  changed = green
+  untracked = cyan
+
+[alias]
+  log = log --stat
+
+  
+[gui]
+	encoding = utf-8
+[push]
+	default = simple

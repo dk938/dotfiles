@@ -1,0 +1,21 @@
+#!/bin/csh
+#%reps org replace files
+if ($#argv < 1) then
+        exit
+endif
+
+set org = $argv[1]
+shift
+set rep = $argv[1]
+shift
+
+while ($#argv)
+        echo "$argv[1] ... "
+        if (-f "$argv[1]") then
+                mv $argv[1] $argv[1].bak
+                sed -e "s#$org#$rep#g" $argv[1].bak > $argv[1]
+                echo "done"
+        endif
+        shift
+end
+

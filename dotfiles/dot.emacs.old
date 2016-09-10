@@ -1,0 +1,485 @@
+;;
+;;for elisp debug
+;; %emacs --debug-init
+
+; server start for emacs-client
+(require 'server)
+(unless (server-running-p)
+  (server-start))
+
+(setq inhibit-startup-message t)
+;;; hide tool bar
+(tool-bar-mode 0)
+;;;menu bar off
+(menu-bar-mode 1)
+
+;;;line number
+;;(global-linum-mode 1)
+
+
+(setq load-path (nconc '("~/elisp") load-path))
+;;(setq load-path (nconc '("~/.emacs.d/auto-install/") load-path))
+
+;backspace
+(global-set-key "\C-h" 'delete-backward-char)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; show-paren-mode
+;; 対応する括弧をハイライトする
+(show-paren-mode t)
+
+;;(setq show-paren-style 'parenthesis) ;; 対応括弧のみをハイライト (デフォルト)
+(setq show-paren-style 'mixed)       ;; 対応括弧が画面外の場合、その間をハイライト
+;; (setq show-paren-style 'expression)  ;; 対応括弧が画面内でもその間をハイライト
+
+;; 対応する括弧が画面内になければ、括弧内を強調表示
+(setq show-paren-ring-bell-on-mismatch t)
+
+;; ハイライトするまでの遅延時間
+(setq show-paren-delay 0.05) ;; default: 0.125
+
+;; show-paren-mode (括弧対応の強調)の背景色
+(set-face-background 'show-paren-match-face "light sky blue")
+(set-face-background 'show-paren-mismatch-face  "tomato")
+
+;; M-: で標準の括弧対応機能が表示されてしまうので消しておく
+(setq blink-matching-paren nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(put 'eval-expression 'disabled nil)
+(put 'narrow-to-region 'disabled nil)
+
+(setq kanji-display-code 3)
+(setq kanji-input-code 3)
+(setq kanji-process-code 3)
+
+(setq od-scroll-step 'half)
+
+;; Shift + カーソルキーでBuffer間を移動
+(windmove-default-keybindings)
+
+(global-set-key "\C-o" 'toggle-input-method)
+(global-set-key "\M-M" 'mars)
+(global-set-key "\M-m" 'rgrep)
+(global-set-key "\M-g" 'goto-line)
+(global-set-key "\M-r" 'query-replace)
+(global-set-key "\M-R" 'revert-buffer)
+(global-set-key "\C-\_" 'advertised-undo)
+(global-set-key "\C-c\C-i" 'indent-region)
+;(global-set-key "\M-p" 'fill-paragraph)
+(global-set-key "\C-c\C-r" 'kill-rectangle)     ;長方形状に削除
+(global-set-key "\C-c\C-y" 'yank-rectangle)     ;長方形状を貼付け
+;;(global-set-key "\C-r" 'backward-kill-word)   ;後方単語単位削除
+(global-set-key "\C-c\C-r" 'comment-region)
+(global-set-key "\C-c\C-m" 'makefile-mode)
+(global-set-key "\M-e" 'ediff-buffers)
+
+(global-set-key "\M-h" 'hide-ifdef-mode)        ;hide ifdef
+(global-set-key "\C-x\C-u" 'untabify)   ;タブをスペースに変換
+;;;;;
+;;;;;自己カスタマイズ
+;;;;;
+;行頭で音を鳴らないようにする関数
+;
+(defun previous-line (arg)
+  (interactive "p")
+  (condition-case nil
+      (line-move (- arg))
+    (beginning-of-buffer)))
+;;;;;
+;;;;;
+;;;info
+;(setq Info-directory-list
+;      (cons "/usr/lab/info"
+;           Info-directory-list))
+
+(global-set-key "\M-i" 'info)
+
+
+;カーソルが行頭にあるときに、C-k を1回打つだけで
+;その行全体が削除されるようにする
+(setq kill-whole-line t)
+
+;;js
+(autoload 'js2-mode "js2-mode" nil t)
+(setq js2-idle-timer-delay 10)
+
+(setq-default c-basic-offset 2)
+(setq-default js2-basic-offset 2)
+ 
+(when (load "js2-mode" t)
+  (setq js2-mirror-mode nil)
+  (setq js2-bounce-indent-flag nil)
+  (set-face-foreground 'js2-function-param-face (face-foreground font-lock-variable-name-face))
+
+  (defun indent-and-back-to-indentation ()
+    (interactive)
+    (indent-for-tab-command)
+    (let ((point-of-indentation
+	   (save-excursion
+	     (back-to-indentation)
+	     (point))))
+      (skip-chars-forward "\s " point-of-indentation)))
+  
+  (define-key js2-mode-map (kbd "C-i") 'indent-and-back-to-indentation)
+  (define-key js2-mode-map (kbd "C-m") nil)
+  (add-to-list 'auto-mode-alist '("\\.js$" . js2-mode))
+  (add-to-list 'auto-mode-alist '("\\.jsm$" . js2-mode))
+  (add-to-list 'auto-mode-alist '("\\.jss$" . js2-mode))
+  )
+ 
+;; インデントの関数の再設定
+(add-hook 'js2-mode-hook  #'(lambda ()
+			      (require 'js)
+			      (setq js-indent-level 2  
+				    js-expr-indent-offset 2
+				    ;;	    c-auto-newline to-list
+				    indent-tabs-mode nil
+				    )
+			      ;; switch文のcaseラベルをインデントする関数を定義する
+			      (defun my-js-indent-line ()
+				(interactive)
+				(let* ((parse-status (save-excursion (syntax-ppss (point-at-bol))))
+				       (offset (- (current-column) (current-indentation)))
+				       (indentation (js--proper-indentation parse-status)))
+				  (back-to-indentation)
+				  
+				  
+				  ;; switch の中は余分に一つインデント
+				  (cond ((let ((pos (nth 1 parse-status)))
+					   (and pos(not (looking-at "}"))
+						(save-excursion  (goto-char pos)
+								 (back-to-indentation)
+								 (looking-at "switch\\W"))))
+					 (indent-line-to (+ indentation js-indent-level)))
+					;; consecutive declarations in a var statement are nice ifdef;; properly aligned, i.e:
+					;;
+					;; var foo = "bar",
+					;;     bar = "foo";
+					((let ((node (js2-node-at-point)))
+					   (and node
+						(= js2-NAME (js2-node-type node))
+						(= js2-VAR (js2-node-type (js2-node-parent node)))))
+					 (indent-line-to (+ 4 indentation)))
+					(t
+					 (js-indent-line)))
+				  (when (> offset 0) (forward-char offset))))
+			      
+			      ;; caseラベルのインデント処理をセットする
+			      
+			      (set (make-local-variable 'indent-line-function) 'my-js-indent-line)
+			      ;; ここまでcaseラベルを調整する設定
+			      ))
+
+;; (require 'js2-highlight-vars)
+;; (add-hook
+;;  'js2-mode-hook
+;;  '(lambda ()
+;;     (if (featurep 'js2-highlight-vars)
+;; 	(js2-highlight-vars-mode))
+;;     (message "My JS2 hook")))
+
+;;; ファイル名でモードを変える
+(setq initial-major-mode 'fundamental-mode)
+(setq default-major-mode 'fundamental-mode)
+
+(setq auto-mode-alist 
+      (append 
+              '(
+                (".cshrc$" . shell-script-mode)
+                ("^.gdb" . gdb-script-mode)
+                ("^dot-gdb" . gdb-script-mode)
+                (".doc$" . text-mode)
+                ("Readme" . text-mode)
+                ("README" . text-mode)
+                ("makefile" . makefile-mode)
+                ("Makefile" . makefile-mode)
+                ("^make" . makefile-mode)
+                ("^Make" . makefile-mode)
+                ("^Make" . makefile-mode)
+                ("Doc" . text-mode)
+                (".emacs" . emacs-lisp-mode)
+                (".xemacs" . emacs-lisp-mode)
+                (".el$" . emacs-lisp-mode)
+                (".cc$" . c++-mode)
+                ("\\.c++$" . c++-mode)
+                (".c$" . c++-mode)
+                (".cpp$" . c++-mode)
+                (".h$" . c++-mode)
+                ("\\.c$" . c++-mode)
+                (".y$" . c++-mode)
+                (".map.dat" . c++-mode)
+                (".mode.dat" . c++-mode)
+                (".tcl$" . tcl-mode)
+                ("\\.pl$" . perl-mode)
+                (".cgi$" . perl-mode)
+                (".html$" . html-mode)
+                (".txt$" . fundamental-mode)
+                (".htm$" . yahtml-mode)         
+                (".ol$" . outline-mode)
+                (".lisp$" . lisp-mode)
+                (".lsp$" . lisp-mode)
+                (".js$" . js2-mode)
+                (".jsm$" . js2-mode)
+                (".jss$" . js2-mode)
+                (".css$" . css-mode)
+                (".$" . fundamental-mode)
+                ("^configure." . fundamental-mode)
+                                )))
+
+
+
+;;; C-n で最下行より下にカーソル移動しなくなる
+(setq next-line-add-newlines nil)
+
+;;; 勝手に auto-fill-mode になる
+;;;各行の文字数が揃う
+(add-hook 'text-mode-hook 'turn-on-auto-fill)
+
+;;;muleを軽くする。
+(setq auto-save-interval 1000)
+
+;;;時間表示
+(display-time)
+(setq display-time-24hr-format t)
+
+;;; リージョンをハイライトする。
+(transient-mark-mode t)
+
+;; バッファを変えてもハイライトしたまま
+(setq highlight-nonselected-windows t)
+
+(global-set-key "\C-l" 'recenter)   ;; ctrl-l では着色しない(その方が早いから)
+                                    ;; 着色するのは、 ctrl-L
+
+;;; column 行列表示 column.elが必要 from 矢田君
+(setq column-number-mode t)
+
+;;現在のファイルパスが表示される
+;(setq-default mode-line-buffer-identification '(" %b [%f]"))
+
+;;emacsでコンパイル
+(global-set-key "\M-p" 'compile)
+
+(put 'upcase-region 'disabled nil)
+
+;;; c-mode, c++-modeの設定
+;;;
+;(require 'cpp-highlight)
+;(load-file "~/elisp/cpp-highlight.el")
+(require 'cpp-highlight)
+(add-hook
+ 'c++-mode-hook
+ '(lambda ()
+    (font-lock-mode 1)
+    (cpp-highlight-buffer t); ;ifdefのハイライト
+    (setq font-lock-keywords c++-font-lock-keywords-2)
+    (ac-c++-mode-setup)
+    ))
+
+(set-language-environment "japanese")
+(prefer-coding-system `utf-8)
+(set-terminal-coding-system `utf-8)
+(set-keyboard-coding-system `utf-8)
+(set-buffer-file-coding-system `utf-8)
+(set-default-coding-systems `utf-8)
+
+(put 'downcase-region 'disabled nil)
+
+
+; 先頭が #! で始まるファイルは実行権をつけて保存
+(add-hook 'after-save-hook
+	  'executable-make-buffer-file-executable-if-script-p)
+
+
+(setq visible-bell nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; GNU GLOBAL(gtags)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(autoload 'gtags-mode "gtags" "" t)
+(add-hook 'c-mode-common-hook
+          '(lambda()
+             (gtags-mode 1)
+             ;; (gtags-make-complete-list)
+	     ))
+(setq gtags-mode-hook
+	  '(lambda ()
+		 (local-set-key "\C-c\C-t" 'gtags-find-tag)
+		 (local-set-key "\C-c\C-r" 'gtags-find-rtag)
+;		 (local-set-key "\C-c\C-s" 'gtags-find-symbol)
+		 (local-set-key "\C-c\C-p" 'gtags-pop-stack)
+		 ))
+;    * Ctrl+t gtagsでジャンプする一つ前の状態に戻る
+;    * Alt+s 指定した変数、定義の定義元を探す
+;    * Alt+r 指定した関数が参照されている部分を探す
+;    * Alt+j 指定した関数が定義されている部分をさがす
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  git
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'git)
+
+;M-x vc-annotate
+(require 'git-blame)
+(require 'vc-git)
+(add-to-list 'vc-handled-backends 'GIT)
+
+
+;;; occur
+; isearch 中にC-oで occur を起動
+(defun isearch-occur ()
+  "Invoke `occur' from within isearch."
+  (interactive)
+  (let ((case-fold-search isearch-case-fold-search))
+    (occur
+     (if isearch-regexp
+         isearch-string (regexp-quote isearch-string)))))
+(define-key isearch-mode-map (kbd "C-o") 'isearch-occur)
+
+;;point のある位置の単語を occur にかける
+(defun occur-at-point()
+  (interactive)
+  (if (thing-at-point 'word)
+      (occur (thing-at-point 'word))
+    (call-interactively 'occur)))
+
+;;ifdef
+(autoload 'hide-ifdef-mode "hideif" nil t)
+
+;;C-x bを便利に
+;buffer の選択が i-search のような動作になります。 
+(iswitchb-mode)
+;同一名の buffer があったとき、 (開いているファイルのパスの一部が表示され) ちょっと見易くなります。 :-) 
+(require 'uniquify)
+(setq uniquify-buffer-name-style 'post-forward-angle-brackets)
+
+(require 'auto-complete)
+;;(require 'auto-complete-config)
+;;(add-to-list 'ac-dictionary-directories "~/.emacs.d/auto-install/ac-dict")
+;;(ac-config-default)
+
+(global-auto-complete-mode t)
+(setq ac-dwim t)
+(defun ac-c++-mode-setup ()
+  (setq ac-sources '(
+		     ac-user-dictionary-files
+		     ac-source-gtags
+		     ac-source-semantic 
+		     ac-source-symbols 
+		     ac-source-words-in-same-mode-buffers
+		     ac-source-semantic-raw
+		     ac-source-imenu
+		     )))
+
+
+
+;; auto-install
+;; (add-to-list 'load-path "~/.emacs.d/auto-install/")
+;; (require 'auto-install)
+;; (setf auto-install-use-wget t)
+;; (auto-install-compatibility-setup)
+;; (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+
+;;col-highlight
+;(require 'col-highlight)
+;(column-highlight-mode nil)
+;(toggle-highlight-column-when-idle 1)
+;(col-highlight-set-interval 1)
+
+;anything
+;(global-set-key "\M-a" 'anything)
+
+;summarye
+(require 'summarye)
+
+;which-func (display-func)
+;(setq which-func-modes (append which-func-modes '(js2-mode)))
+(which-func-mode t)
+(setq which-func-modes t)
+(delete (assoc 'which-func-mode mode-line-format) mode-line-format)
+(setq which-func-header-line-format
+              '(which-func-mode
+                ("" which-func-format)))
+(defadvice which-func-ff-hook (after header-line activate)
+  (when which-func-mode
+    (delete (assoc 'which-func-mode mode-line-format) mode-line-format)
+    (setq header-line-format which-func-header-line-format)))
+
+;C-c h:hide/ C-c s:show
+;; hideif #ifdef～#elsif～#else～#endif
+(autoload 'hide-ifdef-mode "hideif" "Hide #ifdef segments." t nil)
+(setq hide-ifdef-mode-hook
+      '(lambda ()
+	 ;; support #elif by kataoka
+	 (setq hif-else-regexp (concat hif-cpp-prefix "el\\(se\\|if\\)"))
+	 (setq hif-ifx-else-endif-regexp
+	       (concat hif-ifx-regexp "\\|" hif-else-regexp "\\|" hif-endif-regexp))
+	 (define-key hide-ifdef-mode-map "\C-ch" 'hide-ifdef-block)
+	 (define-key hide-ifdef-mode-map "\C-cs" 'show-ifdef-block)))
+
+
+(defun outtree ()
+  "outline-tree"
+  (interactive)
+  (if 'outline-mode (outline-mode))
+  (hide-body)
+  (let* ((basename (princ (buffer-name)))
+         (newtmp (concat basename "-tree")))
+    (if (get-buffer newtmp)
+        (unless (get-buffer-window newtmp)
+            (split-window-vertically 10)
+            (switch-to-buffer newtmp)
+            (other-window 1))
+      (progn
+        (make-indirect-buffer (current-buffer) newtmp)
+        (split-window-vertically 10)
+        (switch-to-buffer newtmp)
+        (if 'outline-mode (outline-mode))
+        (hide-sublevels 1)
+        (other-window 1)))))
+
+(load-library "kermit")
+
+;;canna
+;(set-language-environment "Japanese")
+;(progn (load-library "canna" ) (canna) ) 
+
+
+;;php-mode
+(autoload 'php-mode "php-mode" "Mode for editing PHP source files")
+(add-to-list 'auto-mode-alist '("\\.\\(inc\\|php[s34]?\\)" . php-mode))
+
+
+;; (custom-set-faces
+;;  ;; custom-set-faces was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  '(default ((t (:family "fixed" :foundry "sony" :slant normal :weight normal :height 120 :width normal :background "gray90")))))
+
+;;(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+;; '(default ((t (:family "fixed" :foundry "sony" :slant normal :weight normal :height 120 :width normal )))))
+
+
+;; (require 'flymake)
+
+;; (defun flymake-cc-init ()
+;;   (let* ((temp-file   (flymake-init-create-temp-buffer-copy
+;;                        'flymake-create-temp-inplace))
+;;          (local-file  (file-relative-name
+;;                        temp-file
+;;                        (file-name-directory buffer-file-name))))
+;;     (list "g++" (list "-Wall" "-Wextra" "-fsyntax-only" local-file))))
+
+;; (push '("\\.cc$" flymake-cc-init) flymake-allowed-file-name-masks)
+
+;; (add-hook 'c++-mode-hook
+;;           '(lambda ()
+;;              (flymake-mode t)))

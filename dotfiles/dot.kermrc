@@ -1,0 +1,16 @@
+set protocol kermit
+#set line /dev/cuau0
+set line /dev/cuaU0
+#set line /dev/cuaU1
+#set line /dev/cuaU2
+set speed 19200
+set command bytesize 8
+set parity none
+set stop-bits 1
+set flow-control none
+set carrier-watch off
+set terminal echo on
+
+define U0 set line /dev/cuaU0
+define U1 set line /dev/cuaU1
+define U2 set line /dev/cuaU2
