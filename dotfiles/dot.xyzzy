@@ -1,0 +1,146 @@
+;;インクリメントサーチ(MuleLike)対応
+(require "isearch")
+(global-set-key #\C-/ 'redo)
+(global-set-key #\C-_ 'redo)
+(global-set-key #\C-\\ 'undo)
+(global-set-key #\M-m 'start-selection-as-region)
+(global-set-key #\M-n 'start-selection-as-line)
+(global-set-key #\M-j 'first-error)
+(global-set-key #\M-l 'next-error)
+;(global-set-key #\C-: 'beginning-of-buffer)
+;(global-set-key #\C-] 'end-of-buffer)
+
+;;かな漢字切換(MuleLike)対応
+(global-set-key #\C-o 'toggle-ime)
+;;名前を付けて保存時に、その名前のファイルに切り替える(MuleLike)対応
+(global-set-key '(#\C-x #\C-w) 'emacs-write-file)
+;;grep後、カーソル選択のファイルにJump
+(global-set-key #\M-j 'first-error)
+(global-set-key '(#\C-c #\C-j) 'first-error)
+;;grep後、最初にJumpしたあと、次の検索部分のファイルにJump
+(global-set-key #\M-l 'next-error)
+(global-set-key '(#\C-c #\C-l) 'next-error)
+;;現ファイルの１行目にJump
+;(global-set-key #\C-: 'beginning-of-buffer)
+;;現ファイルの最終行にJump
+(global-set-key #\C-] 'end-of-buffer)
+;;Marz(選択しているものがデフォルトになってます)
+;(global-set-key '(#\C-c #\C-m) 'grep-dialog)
+(global-set-key '(#\M-m) 'grep-dialog)
+;;現カーソルから前方向を１区切りだけ、選択状態にします。続ければ更にもう１区切り
+(global-set-key '(#\C-c #\C-n) 'selection-forward-word)
+;(global-set-key #\C-A 'selection-whole-buffer)
+(global-set-key '(#\C-x  #\C-h) 'selection-whole-buffer)
+(global-set-key #\M-F4 'close-selected-buffer)
+
+#(define-key ed::*c-mode-map* #\tab 'self-insert-command) 
+;;C-nやC-pでカーソル移動した部分を選択できるように
+#(global-set-key #\M-m 'start-selection-as-region)
+;;C-nやC-pでカーソル移動した部分を選択から、通常に戻る
+#(global-set-key #\M-n 'start-selection-as-line)
+;;現カーソルから後ろ方向を１区切りだけ、選択状態にします。続ければ更にもう１区切り
+(global-set-key '(#\C-c #\C-p) 'selection-backward-word)
+
+;;C言語のインデント設定(GPF)
+;(setq ed::*c-indent-tabs-mode* t)
+;;前の行の括弧が閉じていない時のインデント
+;(setq c-indent-level 2)
+;;前の行の括弧が閉じていない時のインデント
+;(setq c++-indent-level 2)
+;;コロン付き文字のみ有効なオフセット
+;(setq c-label-offset -2)
+;;前の行にセミコロン等が付いていない時のインデント
+;(setq c-continued-statement-offset 2)
+;;前の行にセミコロン等が付いていない時"{"のみに有効なオフセット
+;(setq c-brace-offset 0)
+;;関数の外でのインデント
+;(setq c-argdecl-indent 0)
+;;括弧閉じた時に対応する前の括弧の行からのインデント
+(setq c-brace-imaginary-offset 0)
+;#(setq c-comment-indent 2)
+;;TABをインデント用にしない
+;#(define-key ed::*c-mode-map* #\tab 'self-insert-command) 
+
+
+
+(global-set-key #\M-r 'query-replace)
+;;(global-set-key #\C-y 'paste-from-clipboard)
+;;(global-set-key #\C-k 'kill-line)
+(global-set-key #\C-_ 'undo)
+
+
+;;xyzzy起動時は、以下のディレクトリから
+(set-default-directory "C:/Users/dk938/work")
+
+(setq *initial-buffer-mode* 'fundamental-mode)
+(setq default-major-mode 'fundamental-mode)
+
+(require "paren")
+(turn-on-global-paren)
+(setq *paren-highlight-only-paren* t)
+(setq *paren-paren-attribute* '(:underline t :bold t))
+;(setq-default *paren-attribute* '(:background red))
+;(setq-default *paren-paren-attribute* '(:background blue))
+;(setq-default *paren-invalid-attribute* '(:bold t :background 9))
+
+;;;***************************************************************************
+;テキストモード時の色設定
+(add-hook '*text-mode-hook*
+		  (function (lambda () (setq abbrev-mode t)
+					  (setq highlight-keyword t)
+					  (text-parenthses-colorize))))
+
+(defvar *text-paretheses-colorize* nil)
+(setq *text-paretheses-colorize* (make-hash-table))
+(setf (gethash #\「 *text-paretheses-colorize*) #\」)
+(setf (gethash #\『 *text-paretheses-colorize*) #\』)
+(setf (gethash #\〈 *text-paretheses-colorize*) #\〉)
+(setf (gethash #\【 *text-paretheses-colorize*) #\】)
+(setf (gethash #\≪ *text-paretheses-colorize*) #\≫)
+(setf (gethash #\〔 *text-paretheses-colorize*) #\〕)
+(setf (gethash #\［ *text-paretheses-colorize*) #\］)
+(setf (gethash #\｛ *text-paretheses-colorize*) #\｝)
+(setf (gethash #\《 *text-paretheses-colorize*) #\》)
+(setf (gethash #\＜ *text-paretheses-colorize*) #\＞)
+
+(defun text-parenthses-colorize ()
+  (interactive)
+  (setq parentheses-hash-table *text-paretheses-colorize*)
+  (setq highlight-keyword t))
+
+
+;;テキストの色を変更する
+;;http://www.geocities.co.jp/Technopolis-Mars/8229/xyzzy/xyzzy-color.html
+
+(defvar *text-mode-formats*
+  (compile-regexp-keyword-list
+   '(
+     ("^[★▲△□■◇◆○●\.\-].*" t (:color 1 0 :bold))
+     ("^[@].*" t 6)
+     ))
+  ) ;
+;
+(setq regexp-keyword-list *text-mode-formats*)   
+(add-hook 'text-mode-hook 'my-color-text-mode)
+
+(defun my-color-text-mode ()
+  (make-local-variable 'regexp-keyword-list)       
+  (setq regexp-keyword-list *text-mode-formats*)   
+  )
+
+
+;;テキストの色を変更する
+(add-hook '*lisp-mode-hook*
+	  (function (lambda () (setq abbrev-mode t)
+		      (setq highlight-keyword t)
+		      )))
+(defvar *lisp-mode-formats*
+  (compile-regexp-keyword-list
+   '(
+     ("^;;;" t (:color 1 0 :bold)))
+   )) ;
+(add-hook 'lisp-mode-hook 'my-color-lisp-mode)
+(defun my-color-lisp-mode ()
+  (make-local-variable 'regexp-keyword-list)       
+  (setq regexp-keyword-list *lisp-mode-formats*)   
+  )
